@@ -12,63 +12,87 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <scala.java8.compat.version>1.0.2</scala.java8.compat.version>
+        <scala.parser.combinators.version>1.1.2</scala.parser.combinators.version>
+        <scala.test.version>3.2.9</scala.test.version>
+        <scala.xml.version>1.3.0</scala.xml.version>
     </properties>
 
     <profiles>
         <profile>
             <id>Scala2.12</id>
+            <properties>
+                <scala.compat.version>2.12</scala.compat.version>
+                <scala.mantainece.version>17</scala.mantainece.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>Scala2.11</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <scala.version>2.12.17</scala.version>
-                <scala.compat.version>2.12</scala.compat.version>
+                <scala.compat.version>2.11</scala.compat.version>
+                <scala.mantainece.version>12</scala.mantainece.version>
             </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>${scala.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.scala-lang.modules</groupId>
-                    <artifactId>scala-xml_${scala.compat.version}</artifactId>
-                    <version>1.1.1</version>
-                    <scope>provided</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.scala-lang.modules</groupId>
-                    <artifactId>scala-parser-combinators_${scala.compat.version}</artifactId>
-                    <version>1.1.1</version>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
         </profile>
         <profile>
-            <id>scala-2.11</id>
+            <id>Spark2</id>
             <properties>
-                <scala.version>2.11.12</scala.version>
-                <scala.compat.version>2.11</scala.compat.version>
+                <spark.version>2.4.8</spark.version>
             </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>${scala.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.scala-lang.modules</groupId>
-                    <artifactId>scala-xml_${scala.compat.version}</artifactId>
-                    <version>1.1.1</version>
-                    <scope>provided</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.scala-lang.modules</groupId>
-                    <artifactId>scala-parser-combinators_${scala.compat.version}</artifactId>
-                    <version>1.1.1</version>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.compat.version}.${scala.mantainece.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>${scala.compat.version}.${scala.mantainece.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+            <version>${scala.compat.version}.${scala.mantainece.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.compat.version}</artifactId>
+            <version>${scala.test.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-xml_${scala.compat.version}</artifactId>
+            <version>${scala.xml.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-parser-combinators_${scala.compat.version}</artifactId>
+            <version>${scala.parser.combinators.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-java8-compat_${scala.compat.version}</artifactId>
+            <version>${scala.java8.compat.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.compat.version}</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.compat.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 </project>
