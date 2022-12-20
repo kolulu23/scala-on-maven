@@ -5,6 +5,19 @@ import org.apache.spark.sql.{Row, SaveMode}
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.util.Random
 
+/**
+ * Fake transaction-like event data.
+ * Some characteristics should be noted:
+ *  i. Transaction amount is gaussian distributed
+ *  i. It also mimics keyed data(`dim` and `sub_dim`)
+ *  i. Data skew is not phenomenal, but you can tweak this by adding huge anomaly
+ *  i. Data sink is just compressed csv with default partitions as it is portable enough to be dealt with
+ *  i. Both `trans_source_id` and `trans_target_id`'s length is fixed, and they are almost evenly distributed
+ *  i. `trans_status` is not evenly distributed
+ *  i. Cardinality matters, the total number of `trans_source_id` should be at least three times larger than the
+ *      number of `dim` and `sub_dim` combinations. It does look weired though.
+ *
+ */
 class FakeSomeData extends SparkFunSuite {
 
   val rand = new Random(556887221)

@@ -4,11 +4,12 @@
     <inspection_tool class="MavenPackageUpdate" enabled="true" level="WEAK WARNING" enabled_by_default="true">
       <option name="excludeList">
         <list>
-          <option value="org.scala-lang:scala-library" />
-          <option value="org.scala-lang.modules:scala-parser-combinators_2.11" />
-          <option value="org.scala-lang:scala-reflect" />
+          <option value="org.scala-lang:*" />
+          <option value="org.scalatest:*" />
+          <option value="org.scala-lang.modules:*" />
         </list>
       </option>
     </inspection_tool>
+    <inspection_tool class="VulnerableLibrariesLocal" enabled="false" level="TEXT ATTRIBUTES" enabled_by_default="false" editorAttributes="CONSIDERATION_ATTRIBUTES" />
   </profile>
 </component>
