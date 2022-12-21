@@ -95,4 +95,42 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+    <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>4.8.0</version>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <!--                    <execution>-->
+                    <!--                        <id>scala-test-compile</id>-->
+                    <!--                        <phase>process-test-resources</phase>-->
+                    <!--                        <goals>-->
+                    <!--                            <goal>testCompile</goal>-->
+                    <!--                        </goals>-->
+                    <!--                    </execution>-->
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
