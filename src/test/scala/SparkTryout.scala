@@ -42,8 +42,8 @@ class SparkTryout extends SparkFunSuite {
     val windowSpec = Window
       .partitionBy(col(DERIVED_DIMS))
       .orderBy(unix_timestamp(col(DERIVED_DATE), "yyyy-MM-dd"))
-    val last3days = windowSpec.rangeBetween(-3 * 24 * 60 * 60 * 1000L, Window.currentRow)
-    val last5days = windowSpec.rangeBetween(-5 * 24 * 60 * 60 * 1000L, Window.currentRow)
+    val last3days = windowSpec.rangeBetween(-3 * 24 * 60 * 60, Window.currentRow)
+    val last5days = windowSpec.rangeBetween(-5 * 24 * 60 * 60, Window.currentRow)
     df.select(
       col(DERIVED_DIMS),
       col(DERIVED_DATE),
