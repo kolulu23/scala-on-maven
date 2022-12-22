@@ -1,8 +1,9 @@
 import FakeSomeData.TRANS_DATA_PATH
-import SparkTryout.{DERIVED_DATE, DERIVED_DIMS}
+import aow._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.LongType
 
 /**
  * Does some prototyping on spark's groupBy+aggregator+window api.
@@ -21,8 +22,8 @@ class SparkTryout extends SparkFunSuite {
       .read
       .option("header", value = true)
       .csv(TRANS_DATA_PATH)
-      .withColumn(DERIVED_DIMS, concat_ws("#", col("dim"), col("sub_dim")))
-      .withColumn(DERIVED_DATE, from_unixtime(col("biz_time") / 1000, "yyyy-MM-dd"))
+      .withColumn(DERIVED_DIMS, derive_dims(Seq("dim", "sub_dim")))
+      .withColumn(DERIVED_DATE, derive_date(col("biz_time"), LongType))
   }
 
   test("GroupBy on DataFrame Test") {
@@ -41,8 +42,8 @@ class SparkTryout extends SparkFunSuite {
     val windowSpec = Window
       .partitionBy(col(DERIVED_DIMS))
       .orderBy(unix_timestamp(col(DERIVED_DATE), "yyyy-MM-dd"))
-    val last3days = windowSpec.rangeBetween(-3 * 24 * 60 * 60, Window.currentRow)
-    val last5days = windowSpec.rangeBetween(-5 * 24 * 60 * 60, Window.currentRow)
+    val last3days = windowSpec.rangeBetween(-3 * 24 * 60 * 60 * 1000L, Window.currentRow)
+    val last5days = windowSpec.rangeBetween(-5 * 24 * 60 * 60 * 1000L, Window.currentRow)
     df.select(
       col(DERIVED_DIMS),
       col(DERIVED_DATE),
@@ -52,10 +53,4 @@ class SparkTryout extends SparkFunSuite {
     ).dropDuplicates(DERIVED_DIMS, DERIVED_DATE)
       .show()
   }
-
-}
-
-object SparkTryout {
-  val DERIVED_DIMS = "union_dim"
-  val DERIVED_DATE = "derived_date"
 }
