@@ -1,16 +1,15 @@
-import FakeSomeData.TRANS_DATA_PATH
+package prelude
+
 import aow._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.LongType
+import prelude.FakeSomeData.TRANS_DATA_PATH
 
 /**
  * Does some prototyping on spark's groupBy+aggregator+window api.
- *
- * To run this test, first you need generate some fake data with [[FakeSomeData]].
- * Then if you are on windows, you should download <a href="https://github.com/steveloughran/winutils">winutils</a>
- * and add the __bin__ folder to your system environment variable lists.
+ * To run these tests, you need generate some fake data with [[FakeSomeData]].
  */
 class SparkTryout extends SparkFunSuite {
 

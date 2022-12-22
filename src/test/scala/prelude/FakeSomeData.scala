@@ -1,6 +1,8 @@
-import FakeSomeData.TRANS_DATA_PATH
+package prelude
+
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
+import prelude.FakeSomeData.TRANS_DATA_PATH
 
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.util.Random
@@ -15,23 +17,14 @@ import scala.util.Random
  *  i. Both `trans_source_id` and `trans_target_id`'s length is fixed, and they are almost evenly distributed
  *  i. `trans_status` is not evenly distributed
  *  i. Cardinality matters, the total number of `trans_source_id` should be at least three times larger than the
- *      number of `dim` and `sub_dim` combinations. It does look weired though.
+ *     number of `dim` and `sub_dim` combinations. It does look weired though.
  *
  */
 class FakeSomeData extends SparkFunSuite {
 
-  val rand = new Random(556887221)
+  private val rand = new Random(556887221)
 
   test("Make up some data, runs only once") {
-    val schema = StructType(Seq(
-      StructField("dim", DataTypes.StringType),
-      StructField("sub_dim", DataTypes.IntegerType),
-      StructField("biz_time", DataTypes.LongType),
-      StructField("trans_amount", DataTypes.DoubleType),
-      StructField("trans_source_id", DataTypes.StringType),
-      StructField("trans_target_id", DataTypes.StringType),
-      StructField("trans_status", DataTypes.IntegerType)
-    ))
     val allDims = Seq("John", "Mike", "Michale", "Hill")
     val allSubDims = (0 to 24).map(_ => rand.nextInt(99))
     val allStatus = Seq(0, 0, 1, 1, 2, 3, 0, 0)
@@ -59,7 +52,7 @@ class FakeSomeData extends SparkFunSuite {
     rows.append(Row.fromSeq(Seq("Lulu", 22, bizTime + 86400 * 2, 100D, "Me", "You", 0)))
     rows.append(Row.fromSeq(Seq("Lulu", 22, bizTime + 86400 * 2, 900D, "You", "Me", 1)))
     // Data is evenly distributed around "dim" and "sub_dim"
-    val df = sparkSession.createDataFrame(sparkSession.sparkContext.parallelize(rows), schema)
+    val df = sparkSession.createDataFrame(sparkSession.sparkContext.parallelize(rows), FakeSomeData.TRANS_DATA_SCHEMA)
     df.show(truncate = false)
     df.describe("trans_amount").show(truncate = false)
     df.write
@@ -71,4 +64,14 @@ class FakeSomeData extends SparkFunSuite {
 
 object FakeSomeData {
   val TRANS_DATA_PATH = "src/test/resources/data/transactions"
+
+  val TRANS_DATA_SCHEMA: StructType = StructType(Seq(
+    StructField("dim", DataTypes.StringType),
+    StructField("sub_dim", DataTypes.IntegerType),
+    StructField("biz_time", DataTypes.LongType),
+    StructField("trans_amount", DataTypes.DoubleType),
+    StructField("trans_source_id", DataTypes.StringType),
+    StructField("trans_target_id", DataTypes.StringType),
+    StructField("trans_status", DataTypes.IntegerType)
+  ))
 }

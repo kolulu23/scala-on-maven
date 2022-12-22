@@ -1,6 +1,6 @@
 import org.apache.spark.sql
-import org.apache.spark.sql.functions.{col, concat_ws, date_format, expr, from_unixtime, unix_timestamp}
-import org.apache.spark.sql.types.{DataType, DateType, LongType, StringType, TimestampType}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 
 import java.time.Instant
 
@@ -30,18 +30,29 @@ package object aow {
    *
    * Since which column it is derived from is determined at runtime, so this column can only guarantee
    * consistency at input level, (e.g. Same data warehouse and same executor).
+   *
+   * Your data may not be suitable to derive such a field if it is not event-like or time-series data.
+   * In that case, [[DERIVED_DATE]] may be more useful.
    */
   val DERIVED_TIME = "_derived_ts"
 
   /**
+   * For referencing column derived by [[aow.derive_unix_time]].
+   */
+  val DERIVED_UNIX_TIME = "_derive_uts"
+
+  /**
    * Same as [[DERIVED_TIME]] except it derives to a formatted date string.
+   *
+   * For some reasons, if you only aggregate data by day, you may only derive
+   * this column rather than [[DERIVED_TIME]] or both.
    */
   val DERIVED_DATE = "_derived_dt"
 
   /**
    * Default format for [[DERIVED_DATE]]
    */
-  val DEFAULT_DATE_FMT = "yyyy-MM-dd"
+  val DERIVED_DATE_FMT = "yyyy-MM-dd"
 
   /**
    * Derive a union dim column with the name of [[DERIVED_DIMS]]
@@ -55,24 +66,48 @@ package object aow {
   }
 
   /**
-   * Derive a time column with the name of [[DERIVED_TIME]].
+   * Derive a time column with the name of [[DERIVED_TIME]] in milliseconds since unix epoch.
    *
-   * If `dataType` is [[LongType]], we assume it's milliseconds passed since unix epoc.
+   * If `dataType` is [[LongType]], we assume it's already milliseconds since unix epoch.
    *
    * @param src      Column to be derived from
-   * @param dataType Data type of `from`
-   * @param fmt      Format string of `from`, leave it to None if `dataType` is [[LongType]]
-   * @return Derived time column
+   * @param dataType Data type of `src`
+   * @param fmt      Datetime format string of `src`. Set it to `None` if `dataType` is [[LongType]] or
+   *                 you don't know the format string of `src`, in later case `yyyy-MM-dd HH:mm:ss` is used.
+   * @return Derived time column, data type is long
    */
-  def derive_time(src: sql.Column,
-                  dataType: DataType,
-                  fmt: Option[String]): sql.Column = {
-    dataType match {
-      case LongType => src.cast(LongType)
-      case DateType | TimestampType | StringType => fmt.fold(unix_timestamp(src))(unix_timestamp(src, _)).cast(LongType)
+  def derive_time(src: sql.Column, dataType: DataType, fmt: Option[String]): sql.Column = {
+    val dt = dataType match {
+      case LongType => src
+      case DateType | TimestampType | StringType => fmt.fold(unix_timestamp(src))(unix_timestamp(src, _))
       case _ => src
     }
+    dt.cast(LongType)
   }
+
+  /**
+   * Derive a time column with the name of [[DERIVED_TIME]] in milliseconds since unix epoch.
+   *
+   * @param src Column to be derived from
+   * @param fmt Datetime format string of `src`. Set it to `None` if `dataType` is [[LongType]] or
+   *            you don't know the format string of `src`, in later case `yyyy-MM-dd HH:mm:ss` is used.
+   * @see derive_time(src: sql.Column, dataType: DataType, fmt: Option[String]): sql.Column
+   * @throws sql.catalyst.analysis.UnresolvedException If `src` is not bond to any dataframe or not being resolved
+   * @return Derived time column, data type is long
+   */
+  def derive_time(src: sql.Column, fmt: Option[String]): sql.Column = derive_time(src, src.expr.dataType, fmt)
+
+  /**
+   * Derive a time column with the name of [[DERIVED_TIME]] in seconds since unix epoch.
+   *
+   * @param src Column to be derived from
+   * @param fmt Datetime format string of `src`. Set it to `None` if `dataType` is [[LongType]] or
+   *            you don't know the format string of `src`, in later case `yyyy-MM-dd HH:mm:ss` is used.
+   * @see derive_time(src: sql.Column, dataType: DataType, fmt: Option[String]): sql.Column
+   * @throws sql.catalyst.analysis.UnresolvedException If `src` is not bond to any dataframe or not being resolved
+   * @return Derived time column, data type is long
+   */
+  def derive_unix_time(src: sql.Column, fmt: Option[String]): sql.Column = (derive_time(src, fmt) / 1000L).cast(LongType)
 
   /**
    * Derive a date column with the name of [[DERIVED_DATE]].
@@ -81,16 +116,22 @@ package object aow {
    *
    * @param src      Column name to derive from
    * @param dataType Data type of `from`
-   * @param fmt      Format string for the derived column
    * @return Derived date string column
    */
-  def derive_date(src: sql.Column,
-                  dataType: DataType,
-                  fmt: String = DEFAULT_DATE_FMT): sql.Column = {
+  def derive_date(src: sql.Column, dataType: DataType): sql.Column = {
     dataType match {
-      case LongType => from_unixtime(src / 1000L, fmt)
-      case DateType | TimestampType | StringType => date_format(src, fmt)
+      case LongType => from_unixtime(src / 1000L, DERIVED_DATE_FMT)
+      case DateType | TimestampType | StringType => date_format(src, DERIVED_DATE_FMT)
       case _ => src
     }
   }
+
+  /**
+   * Derive a date column with the name of DERIVED_DATE using evaluate dataType of `src`.
+   *
+   * @param src Column name to derive from
+   * @return Derived date string column
+   * @throws sql.catalyst.analysis.UnresolvedException If `src` is not bond to any dataframe or not being resolved
+   */
+  def derive_date(src: sql.Column): sql.Column = derive_date(src, src.expr.dataType)
 }
