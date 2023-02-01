@@ -5,7 +5,10 @@ import org.apache.spark.sql.expressions.{Window, WindowSpec}
 import org.apache.spark.sql.functions.col
 
 /**
- *
+ * @param on Determines which column the time window sits on,
+ *           the series of data will also be sorted according to this column.
+ *           Constrained by Spark window api, this column must be numerical, namely Long or Int,
+ *           so use unix timestamp is highly recommended.
  * @author liutianlu
  *         <br/>Created 2022/12/22 15:48
  */
@@ -13,9 +16,9 @@ case class TimeWindowMaker(on: sql.Column) {
 
   private var _window: WindowSpec = _
 
-  def window(): TimeWindowMaker = {
+  def window(partitionColumns: Seq[sql.Column] = Seq(col(DERIVED_DIMS))): TimeWindowMaker = {
     _window = Window
-      .partitionBy(col(DERIVED_DIMS))
+      .partitionBy(partitionColumns: _*)
       .orderBy(on)
     this
   }
@@ -32,6 +35,7 @@ case class TimeWindowMaker(on: sql.Column) {
     this
   }
 
+  // Normally you must call `window` exact once to build a WindowSpec
   def make(): WindowSpec = {
     _window
   }

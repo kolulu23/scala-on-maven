@@ -42,6 +42,12 @@
                 <spark.version>2.4.8</spark.version>
             </properties>
         </profile>
+        <profile>
+            <id>Spark3</id>
+            <properties>
+                <spark.version>3.3.0</spark.version>
+            </properties>
+        </profile>
     </profiles>
 
     <dependencies>

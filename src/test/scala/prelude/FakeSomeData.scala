@@ -2,7 +2,7 @@ package prelude
 
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
-import prelude.FakeSomeData.TRANS_DATA_PATH
+import prelude.FakeSomeData.{TRANS_DATA_PATH, TRANS_DATA_PATH_SMALL}
 
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.util.Random
@@ -65,13 +65,23 @@ class FakeSomeData extends SparkFunSuite {
 object FakeSomeData {
   val TRANS_DATA_PATH = "src/test/resources/data/transactions"
 
+  val TRANS_DATA_PATH_SMALL = "src/test/resources/data/transactions_small"
+
+  val TRANS_DATA_FIELD_DIM: StructField = StructField("dim", DataTypes.StringType)
+  val TRANS_DATA_FIELD_SUB_DIM: StructField = StructField("sub_dim", DataTypes.IntegerType)
+  val TRANS_DATA_FIELD_BIZ_TIME: StructField = StructField("biz_time", DataTypes.LongType)
+  val TRANS_DATA_FIELD_TRANS_AMOUNT: StructField = StructField("trans_amount", DataTypes.DoubleType)
+  val TRANS_DATA_FIELD_SOURCE_ID: StructField = StructField("trans_source_id", DataTypes.StringType)
+  val TRANS_DATA_FIELD_TARGET_ID: StructField = StructField("trans_target_id", DataTypes.StringType)
+  val TRANS_DATA_FIELD_STATUS: StructField = StructField("trans_status", DataTypes.IntegerType)
+
   val TRANS_DATA_SCHEMA: StructType = StructType(Seq(
-    StructField("dim", DataTypes.StringType),
-    StructField("sub_dim", DataTypes.IntegerType),
-    StructField("biz_time", DataTypes.LongType),
-    StructField("trans_amount", DataTypes.DoubleType),
-    StructField("trans_source_id", DataTypes.StringType),
-    StructField("trans_target_id", DataTypes.StringType),
-    StructField("trans_status", DataTypes.IntegerType)
+    TRANS_DATA_FIELD_DIM,
+    TRANS_DATA_FIELD_SUB_DIM,
+    TRANS_DATA_FIELD_BIZ_TIME,
+    TRANS_DATA_FIELD_TRANS_AMOUNT,
+    TRANS_DATA_FIELD_SOURCE_ID,
+    TRANS_DATA_FIELD_TARGET_ID,
+    TRANS_DATA_FIELD_STATUS
   ))
 }

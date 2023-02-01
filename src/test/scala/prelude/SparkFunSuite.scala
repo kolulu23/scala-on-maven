@@ -19,7 +19,7 @@ abstract class SparkFunSuite extends AnyFunSuite with BeforeAndAfterAll {
     sparkSession = SparkSession
       .builder()
       .appName("SparkFunSuite")
-      .config("spark.some.config.option", "some-value")
+      .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .master("local[*]")
       .getOrCreate()
     println(s"A ${sparkSession.sparkContext.getClass.getCanonicalName} was created")
