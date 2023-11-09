@@ -17,7 +17,7 @@ class AggregatorTest extends SparkFunSuite {
     super.beforeAll()
     df = sparkSession.read.option("header", value = true)
       .schema(TRANS_DATA_SCHEMA)
-      .csv(TRANS_DATA_PATH_SMALL)
+      .csv(TRANS_DATA_PATH)
     df = df.withColumn(DERIVED_DIMS, derive_dims(Seq(TRANS_DATA_FIELD_DIM.name, TRANS_DATA_FIELD_SUB_DIM.name)))
       .withColumn(DERIVED_DATE, derive_date(df(TRANS_DATA_FIELD_BIZ_TIME.name)))
       .withColumn(DERIVED_UNIX_TIME, derive_unix_time(df(TRANS_DATA_FIELD_BIZ_TIME.name), None))
@@ -48,8 +48,8 @@ class AggregatorTest extends SparkFunSuite {
       .window()
       .span(days = 3)
       .make()
-    sparkSession.udf.register("setCountAgg", functions.udaf(new SetCountAggregator[String]))
-    sparkSession.udf.register("setSerdeAgg", functions.udaf(new SetSerdeAggregator[String]))
+    sparkSession.udf.register("setCountAgg", functions.udaf(SetCountAggregator[String]()))
+    sparkSession.udf.register("setSerdeAgg", functions.udaf(SetSerdeAggregator[String](2)))
     val setCount3d = (expr(s"setCountAgg(${TRANS_DATA_FIELD_TARGET_ID.name})") over window).as("set3d")
     val setSerde3d = (expr(s"setSerdeAgg(${TRANS_DATA_FIELD_TARGET_ID.name})") over window).as("set3d_bytes")
     val fields = Seq(
@@ -60,6 +60,6 @@ class AggregatorTest extends SparkFunSuite {
       setSerde3d
     )
     val result = df.select(fields: _*).dropDuplicates(DERIVED_DIMS, DERIVED_DATE)
-    result.show(100)
+    result.show(100, truncate = false)
   }
 }

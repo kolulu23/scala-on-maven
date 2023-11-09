@@ -2,7 +2,7 @@ package prelude
 
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
-import prelude.FakeSomeData.{TRANS_DATA_PATH, TRANS_DATA_PATH_SMALL}
+import prelude.FakeSomeData.TRANS_DATA_PATH
 
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.util.Random
@@ -64,8 +64,6 @@ class FakeSomeData extends SparkFunSuite {
 
 object FakeSomeData {
   val TRANS_DATA_PATH = "src/test/resources/data/transactions"
-
-  val TRANS_DATA_PATH_SMALL = "src/test/resources/data/transactions_small"
 
   val TRANS_DATA_FIELD_DIM: StructField = StructField("dim", DataTypes.StringType)
   val TRANS_DATA_FIELD_SUB_DIM: StructField = StructField("sub_dim", DataTypes.IntegerType)

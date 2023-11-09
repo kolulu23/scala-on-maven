@@ -15,9 +15,15 @@ import scala.collection.mutable
  * @author liutianlu
  *         <br/>Created 2022/12/29 14:21
  */
-class SetSerdeAggregator[T] extends SetAggregator[T, Set[T]] {
+class SetSerdeAggregator[T](override val limit: Long) extends SetAggregator[T, Set[T]](limit) {
 
   override def finish(reduction: mutable.Set[T]): Set[T] = reduction.toSet
 
   override def outputEncoder: Encoder[Set[T]] = Encoders.kryo
+}
+
+object SetSerdeAggregator {
+  def apply[T](): SetSerdeAggregator[T] = new SetSerdeAggregator(limit = SetAggregator.DEFAULT_BUF_LIMIT)
+
+  def apply[T](limit: Long): SetSerdeAggregator[T] = new SetSerdeAggregator(limit)
 }
