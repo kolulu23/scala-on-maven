@@ -28,7 +28,6 @@ class MetricInvokeRecordAnalysis extends SparkFunSuite {
       .option("header", value = true)
       .schema(MIN_DATA_SCHEMA)
       .csv(s"${MetricInvokeRecordAnalysis.MIH_DATA_PATH}/small.csv")
-    df.show()
   }
 
   test("two-label-agg") {
@@ -53,58 +52,79 @@ class MetricInvokeRecordAnalysis extends SparkFunSuite {
    * Info gain and gini impurity calculated in this way is pretty much useless.
    */
   test("partition-and-hardcoded-buckets") {
-    val bucketId = "bucket_id"
-    val bucketNum = 2
+    val (colBucketId, colMetricCode, colLabel, colMetricResult) = (
+      col("bucket_id"),
+      col(MIN_DATA_FIELD_METRIC_CODE.name),
+      col(MIN_DATA_FIELD_LABEL.name),
+      col(MIN_DATA_FIELD_METRIC_RESULT.name)
+    )
+    val bucketNum = 3
     // Root entropy is calculated directly on label column
-    val rootEntropyDf = df.groupBy(MIN_DATA_FIELD_METRIC_CODE.name)
+    val rootEntropyDf = df.groupBy(colMetricCode)
       .agg(
         count("*").as("total"),
         array(
-          count_if(col(MIN_DATA_FIELD_LABEL.name) === lit(1)),
-          count_if(col(MIN_DATA_FIELD_LABEL.name) === lit(0))
+          count_if(colLabel === lit(1)),
+          count_if(colLabel === lit(0))
         ).as("label_count")
       ).select(
-        col(MIN_DATA_FIELD_METRIC_CODE.name),
+        colMetricCode,
         col("total"),
-        expr("entropy(label_count, total)").as("entropy_root")
+        expr("entropy(label_count, total)").as("entropy_root"),
+        // Here's something special, we solely replies on the label input instead of using buckets
+        // This is partially because manually split buckets is useless for the semantics of gini impurity
+        expr("gini_impurity(label_count, total)").as("gini_impurity")
       )
-    // Metric(feature) entropy and gini is calculated with hardcoded buckets
-    val window = Window
-      .partitionBy(col(MIN_DATA_FIELD_METRIC_CODE.name))
-      .orderBy(col(MIN_DATA_FIELD_METRIC_RESULT.name))
-    val bucketsDf = df.withColumn(bucketId, ntile(bucketNum) over window)
+    // Metric(feature) entropy is calculated with hardcoded buckets
+    val window = Window.partitionBy(colMetricCode).orderBy(colMetricResult)
+    val bucketsDf = df.withColumn("bucket_id", ntile(bucketNum) over window)
     bucketsDf.show()
 
-    val pivotedDf = bucketsDf.groupBy(MIN_DATA_FIELD_METRIC_CODE.name).pivot(col(bucketId))
+    val pivotedDf = bucketsDf
+      .groupBy(colMetricCode, colBucketId)
+      .pivot(colLabel)
       .agg(count("*"))
-    pivotedDf.show()
-
-    val bucketIdCols = pivotedDf.schema
+    val labelIdCols = Seq(ifnull(col("1"), lit(0)), ifnull(col("0"), lit(0)))
+    // To calculate split information and eventually information gain
+    val pivotedPerBucketDf = bucketsDf
+      .groupBy(colMetricCode)
+      .pivot(colBucketId)
+      .agg(count("*"))
+    val bucketIdCols = pivotedPerBucketDf.schema
       .filterNot(p => p.name == MIN_DATA_FIELD_METRIC_CODE.name)
       .map(p => ifnull(col(p.name), lit(0)))
+    val splitInfoDf = pivotedPerBucketDf
+      .join(rootEntropyDf, MIN_DATA_FIELD_METRIC_CODE.name, "left")
+      .withColumn("bucket_size_count", array(bucketIdCols: _*))
+      .select(
+        colMetricCode,
+        expr("entropy(bucket_size_count, total)").as("split_info"),
+        col("gini_impurity")
+      )
     pivotedDf
       .join(rootEntropyDf, MIN_DATA_FIELD_METRIC_CODE.name, "left")
-      .withColumn("label_count", array(bucketIdCols: _*))
       .select(
-        col(MIN_DATA_FIELD_METRIC_CODE.name),
-        expr("entropy(label_count, total)").as("entropy"),
-        expr("gini_impurity(label_count, total)").as("gini_impurity"),
+        colMetricCode,
         col("entropy_root"),
-        (col("entropy_root") - col("entropy")).as("info_gain")
+        array(labelIdCols: _*).as("label_count"),
+        aggregate(
+          col("label_count"),
+          lit(0).cast(DataTypes.LongType),
+          (acc, x) => acc + x.cast(DataTypes.LongType)
+        ).as("total_per_bucket"),
+        (expr("entropy(label_count, total)") * col("total_per_bucket") / col("total")).as("entropy_weighted")
       )
-      .show()
+      .groupBy(colMetricCode)
+      .agg(
+        (first("entropy_root") - sum("entropy_weighted")).as("info_gain")
+      )
+      .join(splitInfoDf, MIN_DATA_FIELD_METRIC_CODE.name, "left")
+      .withColumn("ingo_gain_ratio", col("info_gain") / col("split_info"))
+      .explain(true)
   }
 
   test("using-mllib-discrete") {
-    val df2 = df
-      .filter(col(MIN_DATA_FIELD_VALUE_DATA_TYPE.name) !== lit("STRING"))
-      .withColumn("num_result", col(MIN_DATA_FIELD_METRIC_RESULT.name).cast(DataTypes.DoubleType))
-      .groupBy(col(MIN_DATA_FIELD_BIZ_ID.name))
-      .pivot(col(MIN_DATA_FIELD_METRIC_CODE.name))
-      .agg(
-        collect_list(col("num_result"))
-      )
-    df2.show()
+    ???
   }
 }
 
