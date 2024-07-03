@@ -83,13 +83,13 @@ class MetricInvokeRecordAnalysis extends SparkFunSuite {
     val pivotedDf = bucketsDf
       .groupBy(colMetricCode, colBucketId)
       .pivot(colLabel)
-      .agg(count("*"))
+      .count()
     val labelIdCols = Seq(ifnull(col("1"), lit(0)), ifnull(col("0"), lit(0)))
     // To calculate split information and eventually information gain
     val pivotedPerBucketDf = bucketsDf
       .groupBy(colMetricCode)
       .pivot(colBucketId)
-      .agg(count("*"))
+      .count()
     val bucketIdCols = pivotedPerBucketDf.schema
       .filterNot(p => p.name == MIN_DATA_FIELD_METRIC_CODE.name)
       .map(p => ifnull(col(p.name), lit(0)))
@@ -106,13 +106,13 @@ class MetricInvokeRecordAnalysis extends SparkFunSuite {
       .select(
         colMetricCode,
         col("entropy_root"),
-        array(labelIdCols: _*).as("label_count"),
+        array(labelIdCols: _*).as("label_count_per_bucket"),
         aggregate(
-          col("label_count"),
+          col("label_count_per_bucket"),
           lit(0).cast(DataTypes.LongType),
           (acc, x) => acc + x.cast(DataTypes.LongType)
         ).as("total_per_bucket"),
-        (expr("entropy(label_count, total)") * col("total_per_bucket") / col("total")).as("entropy_weighted")
+        (expr("entropy(label_count_per_bucket, total_per_bucket)") * col("total_per_bucket") / col("total")).as("entropy_weighted")
       )
       .groupBy(colMetricCode)
       .agg(
@@ -120,7 +120,7 @@ class MetricInvokeRecordAnalysis extends SparkFunSuite {
       )
       .join(splitInfoDf, MIN_DATA_FIELD_METRIC_CODE.name, "left")
       .withColumn("ingo_gain_ratio", col("info_gain") / col("split_info"))
-      .explain(true)
+      .show()
   }
 
   test("using-mllib-discrete") {
